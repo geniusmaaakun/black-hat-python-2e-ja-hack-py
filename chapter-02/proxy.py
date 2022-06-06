@@ -1,19 +1,28 @@
+#TCPプロキシ
+#ローカルとリモートの間に入るサーバー
+
 import sys
 import socket
 import threading
 
+#ASCIIに印字可能ならそのまま、それ以外は.にする変換テーブル
 HEX_FILTER = ''.join(
     [(len(repr(chr(i))) == 3) and chr(i) or '.' for i in range(256)])
 
-
+#16進数にダンプする
 def hexdump(src, length=16, show=True):
+    #バイトデータの場合は文字列にデコード
     if isinstance(src, bytes):
         src = src.decode()
     results = list()
     for i in range(0, len(src), length):
+        #ダンプするデータの一部(length)を取り出す。
         word = str(src[i:i+length])
+        #対応文字に変換
         printable = word.translate(HEX_FILTER)
+        #生データを16進数に変換
         hexa = ' '.join([f'{ord(c):02X}' for c in word])
+        #文字埋め
         hexwidth = length*3
         results.append(f'{i:04x}  {hexa:<{hexwidth}}  {printable}')
     if show:
@@ -23,11 +32,14 @@ def hexdump(src, length=16, show=True):
         return results
 
 
+#プロキシがデータを受信するための関数
 def receive_from(connection):
     buffer = b""
+    #タイムアウト
     connection.settimeout(5)
     try:
         while True:
+            #タイムアウトまでデータを読み込む
             data = connection.recv(4096)
             if not data:
                 break
@@ -39,6 +51,7 @@ def receive_from(connection):
     return buffer
 
 
+#リクエスト、レスポンスの改変、修正
 def request_handler(buffer):
     # パケットの改変をここで行うことができる
     return buffer
@@ -51,18 +64,23 @@ def response_handler(buffer):
 
 def proxy_handler(client_socket, remote_host, remote_port, receive_first):
     remote_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    #リモートホストに接続
     remote_socket.connect((remote_host, remote_port))
 
+    #最初にリモート側へデータを要求する必要がないことを確認する。サーバーデーモンの中には要求するものがあるため
     if receive_first:
+        #データ読み込み
         remote_buffer = receive_from(remote_socket)
         if len(remote_buffer):
             print("[<==] Received %d bytes from remote." % len(remote_buffer))
             hexdump(remote_buffer)
 
+            #受信したバッファをクライアントに送信
             remote_buffer = response_handler(remote_buffer)
             client_socket.send(remote_buffer)
             print("[==>] Sent to local.")
 
+    #ローカルクライアントからのからのデータが検出されなくなるまで繰り返し処理
     while True:
         local_buffer = receive_from(client_socket)
         if len(local_buffer):
@@ -82,6 +100,7 @@ def proxy_handler(client_socket, remote_host, remote_port, receive_first):
             client_socket.send(remote_buffer)
             print("[==>] Sent to local.")
 
+        #リモートとローカルのどちらかに送信するデータがなくなると終了。ソケットを閉じる
         if not len(local_buffer) or not len(remote_buffer):
             client_socket.close()
             remote_socket.close()
@@ -89,9 +108,12 @@ def proxy_handler(client_socket, remote_host, remote_port, receive_first):
             break
 
 
+#接続を設定、管理
 def server_loop(local_host, local_port, remote_host, remote_port, receive_first):
+    #ソケット作成
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     try:
+        #ローカルホストにバインドして接続を待ち受ける
         server.bind((local_host, local_port))
     except Exception as e:
         print('problem on bind: %r' % e)
@@ -101,6 +123,7 @@ def server_loop(local_host, local_port, remote_host, remote_port, receive_first)
 
     print("[*] Listening on %s:%d" % (local_host, local_port))
     server.listen(5)
+    #新しい接続要求を受け取ると新しいスレッドを起動して、双方向からのデータの送受信をproxy_handlerで全て担当する
     while True:
         client_socket, addr = server.accept()
         # 接続情報の出力
