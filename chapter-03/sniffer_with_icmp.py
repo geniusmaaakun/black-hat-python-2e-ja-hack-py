@@ -1,12 +1,20 @@
+#ICMPのパース
+#ICMPメッセージをパースし、ホストから返信される際に、元となったメッセージのIPヘッダーとデータ部分の最初の８バイトが含まれる事に注目し、
+#スキャナーによって生成されたICMPレスポンスと同じか照合することで、到達出来ないポートかを判定できる
+
 import ipaddress
 import os
 import socket
 import struct
 import sys
 
+#structモジュールを使う。ctypesとどちらを使っても良い
+#今回はヘッダーの各パートを表す為に書式文字列を用いる
 class IP:
     def __init__(self, buff=None):
+        #ヘッダーを書式文字列で、それぞれのパートを表す
         header = struct.unpack('<BBHHHBBH4s4s', buff)
+        #ver, ihlを抽出する際には操作が必要
         self.ver = header[0] >> 4
         self.ihl = header[0] & 0xF
     
@@ -32,6 +40,8 @@ class IP:
             print('%s No protocol for %s' % (e, self.protocol_num))
             self.protocol = str(self.protocol_num)
 
+#ICMPメッセージをパース
+#ICMP構造体を生成
 class ICMP:
     def __init__(self, buff):
         header = struct.unpack('<BBHHH', buff)
@@ -61,15 +71,19 @@ def sniff(host):
             raw_buffer = sniffer.recvfrom(65535)[0]
             # バッファーの最初の20バイトからIP構造体を作成
             ip_header = IP(raw_buffer[0:20])
+            #ICMPのパケットを受信確認
             if ip_header.protocol == "ICMP":
                 print('Protocol: %s %s -> %s' % (ip_header.protocol, ip_header.src_address, ip_header.dst_address))
                 print(f'Version: {ip_header.ver}')
                 print(f'Header Length: {ip_header.ihl}  TTL: {ip_header.ttl}')
             
                 # ICMPパケットの位置を計算
+                #生パケットにおける、ICMPのオフセットを計算
+                #オフセットはihlに基づいて計算される
                 offset = ip_header.ihl * 4
                 buf = raw_buffer[offset:offset + 8]
                 # ICMP構造体を作成
+                #バッファを作成後、タイプとコードを表示
                 icmp_header = ICMP(buf)
                 print('ICMP -> Type: %s Code: %s\n' % (icmp_header.type, icmp_header.code))
                 

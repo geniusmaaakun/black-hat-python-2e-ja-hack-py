@@ -4,9 +4,12 @@ import socket
 import struct
 import sys
 
+#受信したバッファの先頭の２０バイトをIPヘッダーにマップする為のデータ構造を定義するIPクラスを埋め込む
 class IP:
     def __init__(self, buff=None):
+        #ヘッダーを書式文字列で、それぞれのパートを表す
         header = struct.unpack('<BBHHHBBH4s4s', buff)
+        #ver, ihlを抽出する際には操作が必要
         self.ver = header[0] >> 4
         self.ihl = header[0] & 0xF
     
@@ -52,6 +55,7 @@ def sniff(host):
             # バッファーの最初の20バイトからIP構造体を作成
             ip_header = IP(raw_buffer[0:20])
             # 検出されたプロトコルとホストを出力
+            #キャプチャした情報を出力
             print('Protocol: %s %s -> %s' % (ip_header.protocol, ip_header.src_address, ip_header.dst_address))
                 
     except KeyboardInterrupt:

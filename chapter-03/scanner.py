@@ -1,3 +1,6 @@
+#ホスト発見用のスキャナー　完成
+# kaliからwindowsのホストは認識されない？Linux同士は出来る
+
 import ipaddress
 import os
 import socket
@@ -7,8 +10,9 @@ import threading
 import time
 
 # スキャン対象のサブネット
-SUBNET = '192.168.1.0/24'
+SUBNET = '192.168.56.0/24'
 # ICMPレスポンスのチェック用マジック文字列
+#簡単な文字列をシグニチャーとする。確認用文字列
 MESSAGE = 'PYTHONRULES!'
 
 class IP:
@@ -49,12 +53,14 @@ class ICMP:
         self.seq = header[4]
 
 # マジック文字列を含んだUDPデータグラムをサブネット全体に送信
+#指定したサブネットの全てのIPアドレスを列挙し、各IPにUDPデータグラムを送信する
 def udp_sender():
     with socket.socket(socket.AF_INET, socket.SOCK_DGRAM) as sender:
         for ip in ipaddress.ip_network(SUBNET).hosts():
             sender.sendto(bytes(MESSAGE, 'utf8'), (str(ip), 65212))
             
 
+#初期化時はレスポンスを受け取るIPアドレスを引数として渡す。初期化によりWindowsの場合はプロミスキャストモードを有効化し、レスポンスを受け取るためのソケットをSccanerクラスの属性として作成
 class Scanner:
     def __init__(self, host):
         self.host = host
@@ -69,6 +75,7 @@ class Scanner:
         if  os.name == 'nt':
             self.socket.ioctl(socket.SIO_RCVALL, socket.RCVALL_ON)
 
+    #ネットワークの盗聴。そんざいがかくにんされたホストを記録する
     def sniff(self):
         hosts_up = set([f'{str(self.host)} *'])
         try:
@@ -84,12 +91,14 @@ class Scanner:
                     icmp_header = ICMP(buf)
                     # コードとタイプが3であるかチェック
                     if icmp_header.code == 3 and icmp_header.type == 3:
+                        #ICMPの応答がスキャン対象のサブネットから発せられたものかを確認
                         if ipaddress.ip_address(ip_header.src_address) in ipaddress.IPv4Network(SUBNET):
-                            # マジック文字列を含むか確認
+                            # ICMPの応答にマジック文字列を含むか確認
                             if raw_buffer[len(raw_buffer) - len(MESSAGE): ] == bytes(MESSAGE, 'utf8'):
                                 tgt = str(ip_header.src_address)
                                 if tgt != self.host and tgt not in hosts_up:
                                     hosts_up.add(str(ip_header.src_address))
+                                    #未到達のIPを表示
                                     print(f'Host Up: {tgt}')
         # CTRL-Cが押された際の処理を定義
         except KeyboardInterrupt:
@@ -108,9 +117,11 @@ if __name__ == '__main__':
     if len(sys.argv) == 2:
         host = sys.argv[1]
     else:
-        host = '192.168.1.203'
+        host = '192.168.56.1'
     s = Scanner(host)
     time.sleep(5)
+    #レスポンス受信を妨げないように、別スレッドで起動
     t = threading.Thread(target=udp_sender)
     t.start()
+    #レスポンスを受信し、処理を待ち受ける
     s.sniff()

