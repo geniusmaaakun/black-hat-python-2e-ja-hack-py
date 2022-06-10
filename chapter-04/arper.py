@@ -9,6 +9,7 @@
 #sudo python3 arper.py 192.168.56.101 192.168.56.1 eth1
 
 #sindowsマシンが標的だとうまくいかない？macPCで試す
+#windowsマシンで実行する場合は、別途インストールが必要
 
 from multiprocessing import Process
 from scapy.all import (ARP, Ether, conf, get_if_hwaddr,

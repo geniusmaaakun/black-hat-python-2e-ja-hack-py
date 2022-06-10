@@ -1,0 +1,1 @@
+bhptrojan_from_pyhackで実装

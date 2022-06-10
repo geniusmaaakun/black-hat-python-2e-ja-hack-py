@@ -1,3 +1,5 @@
+#ライブラリを使えない状況でのHTMLパース
+
 from html.parser import HTMLParser
 
 class MyHTMLParser(HTMLParser):
