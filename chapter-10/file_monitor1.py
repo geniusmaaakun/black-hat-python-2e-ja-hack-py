@@ -1,3 +1,10 @@
+#競合状態に勝つ
+#よくある問題はスクリプトファイルに対して、適切なアクセス制限が行われていない事。
+#定期的に実行されているファイルとの競合状態に勝つ必要がある。ソフトウェアやタスクがファイルを作成する時、プロセスが実行、削除する前に、独自のコードをインジェクション出来るようにしておく
+
+
+#ファイル監視ツールを作成
+
 # Modified example that is originally given here:
 # http://timgolden.me.uk/python/win32_how_do_i/watch_directory_for_changes.html
 
@@ -14,10 +21,13 @@ FILE_RENAMED_FROM = 4
 FILE_RENAMED_TO = 5
 
 FILE_LIST_DIRECTORY = 0x0001
+#監視したいディレクトリのリスト
 PATHS = ['c:\\WINDOWS\\Temp', tempfile.gettempdir()]
 
 
+#監視したいリストに対して呼び出す監視スレッド関数
 def monitor(path_to_watch):
+    #監視したいディレクトリへのハンドルを入手
     h_directory = win32file.CreateFile(
         path_to_watch,
         FILE_LIST_DIRECTORY,
@@ -30,6 +40,7 @@ def monitor(path_to_watch):
 
     while True:
         try:
+            #変更があったときに通知を受け取る
             results = win32file.ReadDirectoryChangesW(
                 h_directory,
                 1024,
@@ -43,6 +54,7 @@ def monitor(path_to_watch):
                 None,
                 None
             )
+            #受け取る情報は、変更された対象ファイルのファイル名と、発生したイベントの種類
             for action, file_name in results:
                 full_filename = os.path.join(path_to_watch, file_name)
                 if action == FILE_CREATED:
@@ -55,6 +67,7 @@ def monitor(path_to_watch):
                     print(f'[*] Modified {full_filename}')
                     try:
                         print('[vvv] Dumping contents ... ')
+                        #対象のファイルに何が起こったのかを出力し、ファイルが変更されている事を検知した場合は、その内容を出力
                         with open(full_filename) as f:
                             contents = f.read()
                         print(contents)
