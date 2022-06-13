@@ -14,6 +14,11 @@
 #WindowsからKaliのＳＳＨサーバーに接続し、このSSHを通じてKaliのサーバーからWindows側のWebサーバーに通信を行う。
 #windows側でrforward.pyを実行し、kali側のＳＳＨサーバーへ接続する。Windows側のネットワークのWebサーバにトンネリングする
 
+
+#kali
+#systemctl start ssh
+
+#win10では拒否される
 #python3 rforward.py 10.0.2.15 -p 8081 -r 10.0.2.15:3000 --user=kali --password
 #kali
 
