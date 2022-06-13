@@ -1,5 +1,6 @@
 #サーバーからクライアントにコマンドを送る
 #クライアント側
+#クライアントがWindowsなどを想定
 
 #!/usr/bin/env python
 import locale

@@ -1,14 +1,23 @@
 #SSHトンネリング
+#サーバーにコマンドを送る代わりに、SSHでコマンドを受け取り、受けとったＳＳＨサーバーが指定の送信先へ送信する
+#特定ポートの通信間でＳＳＨを行うサーバーを作る
+#ssh -L 8008:web:80 justin@sshserver
+#8008へのポートに送信された通信は、ＳＳＨトンネルを通ってjustinのsshserverに送られ、web:80へ送信される
+
 #下記はSSHリバーストンネリング
 #WindowsはSSHサーバーは基本的にに動作していない。その場合に有効なのがSSHリバーストンネリング
 #Windowsから通常の方法で外部のSSHサーバー（KaliLinuxなど）に接続する。
 #このSSH接続を通じて、SSHトンネリングを行う際のSSHサーバー側のポート、標的ネットワーク内のホストとポートを指定する。
 
-#WindowsからKaliサーバーに接続し、このSSHを通じてKaliのサーバーからWindows側のWebサーバーに通信を行う。
-#windows側でrforward.pyを実行し、kali側のクライアントの接続を待つ。Windows側のネットワークのWebサーバにトンネリングする
+
+
+#WindowsからKaliのＳＳＨサーバーに接続し、このSSHを通じてKaliのサーバーからWindows側のWebサーバーに通信を行う。
+#windows側でrforward.pyを実行し、kali側のＳＳＨサーバーへ接続する。Windows側のネットワークのWebサーバにトンネリングする
 
 #python3 rforward.py 10.0.2.15 -p 8081 -r 10.0.2.15:3000 --user=kali --password
 #kali
+
+#kaliがローカルの
 
 #!/usr/bin/env python
 
@@ -56,6 +65,7 @@ g_verbose = True
 def handler(chan, host, port):
     sock = socket.socket()
     try:
+        #SSHサーバーへ接続　kaliへ接続
         sock.connect((host, port))
     except Exception as e:
         verbose("Forwarding request to %s:%d failed: %r" % (host, port, e))
@@ -67,15 +77,19 @@ def handler(chan, host, port):
     )
     while True:
         r, w, x = select.select([sock, chan], [], [])
+        #サーバーからのデータを受け取り
         if sock in r:
             data = sock.recv(1024)
             if len(data) == 0:
                 break
+            #送信
             chan.send(data)
+        #結果を受け取り
         if chan in r:
             data = chan.recv(1024)
             if len(data) == 0:
                 break
+            #サーバーへ戻す
             sock.send(data)
     chan.close()
     sock.close()
@@ -90,7 +104,8 @@ def reverse_forward_tunnel(server_port, remote_host, remote_port, transport):
         chan = transport.accept(1000)
         if chan is None:
             continue
-        #handler関数を呼び出し
+        #handler関数を呼び出し。リモートホスト、ポートを割り当てる
+        #リモートの、このポートへの通信は、handlerにフォワーディングされる
         thr = threading.Thread(
             target=handler, args=(chan, remote_host, remote_port)
         )
@@ -234,7 +249,7 @@ def main():
     )
 
     try:
-        #
+        #関数呼び出し
         reverse_forward_tunnel(
             options.port, remote[0], remote[1], client.get_transport()
         )

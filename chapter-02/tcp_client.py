@@ -6,6 +6,8 @@ target_host = "www.google.com"
 target_port = 80
 
 # ソケットオブジェクトの作成
+#AF_INET ipv4
+#SOCK_STREAM TCP
 client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 # サーバーへ接続

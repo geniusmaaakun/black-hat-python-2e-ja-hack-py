@@ -1,5 +1,13 @@
 #TCPプロキシ
 #ローカルとリモートの間に入るサーバー
+#local 10.0.2.15:21と ftp.sun.ac.za 21の間にサーバーを作る
+
+#python proxy.py 10.0.2.15 21 ftp.sun.ac.za 21 True
+#ftp 10.0.2.15 でローカルの10.0.2.15接続を中継して、ftp.sun.ac.za 21に接続される
+"""
+FTP（File Transfer Protocol）とは、サーバとクライアントの間でファイル転送を行う際に必要となる通信プロトコルです。
+通信プロトコルは通信する際の手順や規約のことで、ほかにもSFTPなど種類があります。
+"""
 
 import sys
 import socket
@@ -51,7 +59,7 @@ def receive_from(connection):
     return buffer
 
 
-#リクエスト、レスポンスの改変、修正
+#リクエスト、レスポンスの改変、修正も可能だが、シンプルに返す
 def request_handler(buffer):
     # パケットの改変をここで行うことができる
     return buffer
@@ -135,7 +143,6 @@ def server_loop(local_host, local_port, remote_host, remote_port, receive_first)
             args=(client_socket, remote_host,
                   remote_port, receive_first))
         proxy_thread.start()
-
 
 def main():
     if len(sys.argv[1:]) != 5:

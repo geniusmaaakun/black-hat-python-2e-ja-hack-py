@@ -1,3 +1,8 @@
+#侵入検知システムを回避するために暗号化するSSHを使って通信をトンネリングする
+
+#sudo systemctl start ssh
+#python ssh_cmd.py 
+
 #!/usr/bin/env python
 import paramiko
 

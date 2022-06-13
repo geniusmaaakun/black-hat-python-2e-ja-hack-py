@@ -1,5 +1,6 @@
 #Netcatを実装
-
+#server python netcat.py -t 10.0.2.15 -p 5555 -l -c
+#client python netcat.py -t 10.0.2.15 -p 5555
 import argparse
 import locale
 import os
@@ -80,6 +81,7 @@ class NetCat:
         else:
             self.send()
 
+    #クライアント
     def send(self):
         self.socket.connect((self.args.target, self.args.port))
         if self.buffer:
@@ -112,6 +114,7 @@ class NetCat:
         except EOFError as e:
             print(e)
 
+    #サーバー
     def listen(self):
         print('listening')
         self.socket.bind((self.args.target, self.args.port))
