@@ -1,11 +1,18 @@
+#TwitterIOCクローラー
+#TwitterでマルウェアのＩＯＣをクロールするツールの開発
+#Twitterから最新の情報を取得する。複数のアカウントの最近のツイートを取得し、結果をSlackに投稿する
+
+#Webからコンテンツを得るモジュール
+
 # -*- config:utf-8 -*-
 __author__ = 'Hiroyuki Kakara'
 
 from bs4 import BeautifulSoup
 from datetime import datetime
-import filetype
+import filetype #pip
 from io import StringIO
 import os
+#pip
 from pdfminer.converter import TextConverter
 from pdfminer.layout import LAParams
 from pdfminer.pdfinterp import PDFResourceManager, PDFPageInterpreter
@@ -44,15 +51,18 @@ def convert_pdf_to_txt(path):
 class get_from_web:
     def get_web_content(self, url):
         try:
+            #URLのコンテンツを取得
             re = requests.get(url, timeout=(3.0, 7.5))
         except Exception as ex:
             return str(ex)
         saveFileName = str(datetime.now().timestamp())
         saveFile = open(saveFileName, 'wb')
+        #レスポンスの内容をファイルに書き出す
         saveFile.write(re.content)
         saveFile.close()
         file_type = filetype.guess(saveFileName)
         if file_type is not None and file_type.extension =="pdf":
+            #書き出したファイルがPDFであればPDFの内容をテキストにして返す
             pdf_text = convert_pdf_to_txt(saveFileName)
             os.remove(saveFileName)
             return pdf_text
@@ -74,6 +84,7 @@ class get_from_web:
                 result = driver.page_source.encode('utf-8')
                 driver.quit()
                 soup=BeautifulSoup(result,"html.parser")
+                #そうでない場合は再度コンテンツを取得し、テキストのみを抽出した内容を返す
                 return soup.get_text(" ")
             except Exception as e:
                 print(e)
