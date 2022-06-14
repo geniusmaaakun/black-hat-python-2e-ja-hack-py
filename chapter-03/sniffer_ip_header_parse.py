@@ -4,6 +4,9 @@ import socket
 import struct
 import sys
 
+#sniffer.pyではバイナリ形式の出力なので分かりにくい、IPをパースする
+
+#IPをパース
 #受信したバッファの先頭の２０バイトをIPヘッダーにマップする為のデータ構造を定義するIPクラスを埋め込む
 class IP:
     def __init__(self, buff=None):

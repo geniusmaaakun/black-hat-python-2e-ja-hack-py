@@ -1,5 +1,7 @@
-#pcapファイルの処理
+#pcapファイルの処理　１
 #pcapファイルを読み取り、転送されたあらゆる画像を再構築し、ディスクに書き出す
+
+#arper.pyでパケットを取得。画像があるページなどを見る
 
 from scapy.all import TCP, rdpcap
 import collections

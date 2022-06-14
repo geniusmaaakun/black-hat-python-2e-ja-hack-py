@@ -1,3 +1,5 @@
+#LANに侵入している前提
+
 #電子メールの認証情報の窃取
 
 from scapy.all import sniff
@@ -8,7 +10,7 @@ def packet_callback(packet):
     print(packet.show())
 
 def main():
-    #パケットを監視する
+    #パケットを監視する　単一
     #使い方 P68
     sniff(prn=packet_callback, count=1)
 

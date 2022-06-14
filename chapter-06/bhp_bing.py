@@ -1,6 +1,7 @@
 #BurpでBingを使う
 #1台のサーバー上で複数のWebアプリが稼働しており、いくつかの存在を把握できていない事もある。
 #ターゲットマシン上の脆弱なリソースを見つける
+#MicrosoftのBing検索エンジンでIPに問い合わせる
 
 # -*- coding: utf-8 -*-
 from burp import IBurpExtender

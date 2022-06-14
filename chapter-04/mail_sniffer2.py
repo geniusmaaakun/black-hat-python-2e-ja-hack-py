@@ -1,4 +1,5 @@
 #フィルタリング
+#メールクライアントを使って、アカウントに接続を棟梁
 
 from scapy.all import sniff, TCP, IP
 

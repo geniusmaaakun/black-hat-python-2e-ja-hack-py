@@ -1,5 +1,6 @@
 #ARPキャッシュポイズニング
 #標的マシンに対して自分をゲートウェイと誤認識させる
+#arpキャッシュを書き換え、標的マシンとゲートウェイの間に自分が入る
 
 
 #実行前準備
@@ -8,7 +9,7 @@
 #sudo bash -c　'echo 1 > /proc/sys/net/ipv4/ip_forward'
 #sudo python3 arper.py 192.168.56.101 192.168.56.1 eth1
 
-#sindowsマシンが標的だとうまくいかない？macPCで試す
+#windowsマシンが標的だとうまくいかない？macPCで試す
 #windowsマシンで実行する場合は、別途インストールが必要
 
 from multiprocessing import Process
